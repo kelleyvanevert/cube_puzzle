@@ -20,6 +20,7 @@ struct Placement {
 #[derive(Debug, Clone)]
 struct State {
     placements: Vec<Placement>,
+    boundary: FxHashSet<(i32, i32, i32)>,
     free: FxHashSet<(i32, i32, i32)>,
 }
 
@@ -27,6 +28,7 @@ impl Default for State {
     fn default() -> Self {
         Self {
             placements: vec![],
+            boundary: FxHashSet::from_iter([(0, 0, 0)]),
             free: (0..5)
                 .flat_map(move |x| {
                     //
@@ -95,15 +97,35 @@ impl State {
         for (sx, sy, sz) in next_block_def {
             // find spots where it fits
             'find_spot: for &(x, y, z) in &self.free {
+                let mut touching_boundary = false;
+
                 for dx in 0..sx {
                     for dy in 0..sy {
                         for dz in 0..sz {
+                            if self.boundary.contains(&((x + dx, y + dy, z + dz))) {
+                                touching_boundary = true;
+                            }
+
                             if !self.free.contains(&((x + dx, y + dy, z + dz))) {
                                 continue 'find_spot;
                             }
                         }
                     }
                 }
+
+                // optimization
+                if !touching_boundary {
+                    continue 'find_spot;
+                }
+
+                // println!("CHECK that placement touches boundary {:?}", self.boundary);
+                // println!(
+                //     "{:?}",
+                //     Placement {
+                //         block: (sx, sy, sz),
+                //         pos: (x, y, z),
+                //     }
+                // );
 
                 // it fits at (x,y,z)! -> remove
                 let mut s = self.clone();
@@ -115,9 +137,16 @@ impl State {
                     for dy in 0..sy {
                         for dz in 0..sz {
                             s.free.remove(&(x + dx, y + dy, z + dz));
+                            s.boundary.insert((x + dx - 1, y + dy, z + dz));
+                            s.boundary.insert((x + dx + 1, y + dy, z + dz));
+                            s.boundary.insert((x + dx, y + dy - 1, z + dz));
+                            s.boundary.insert((x + dx, y + dy + 1, z + dz));
+                            s.boundary.insert((x + dx, y + dy, z + dz - 1));
+                            s.boundary.insert((x + dx, y + dy, z + dz + 1));
                         }
                     }
                 }
+
                 found.push(s);
             }
         }
@@ -138,6 +167,10 @@ fn main() {
 
     while let Some(state) = queue.pop() {
         i += 1;
+
+        // if i == 4 {
+        //     panic!("done")
+        // }
 
         if i % 100_000 == 0 {
             println!(
