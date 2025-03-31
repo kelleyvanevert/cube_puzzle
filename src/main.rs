@@ -190,16 +190,10 @@ fn main() {
 
         if i % 10_000 == 0 {
             println!(
-                "considering.. ({} in queue) {} placements, {} space left ({num_collisions} collisions)",
+                "working.. ({} in queue) {} placements, {} space left ({num_collisions} collisions)",
                 queue.len(),
                 state.placements.len(),
                 state.space_left()
-            );
-
-            println!(
-                "minimum is: {} with {:?}",
-                min_space_left.space_left(),
-                min_space_left
             );
         }
 
